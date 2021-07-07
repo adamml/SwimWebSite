@@ -1,6 +1,8 @@
 #ifndef COM_GITHUB_ADAMML_SWIMWEBSITE_UTIL_H
 #define COM_GITHUB_ADAMML_SWIMWEBSITE_UTIL_H
 
+/**
+*/
 char * get_string_from_url(char *url);
 
 typedef enum {

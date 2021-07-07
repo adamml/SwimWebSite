@@ -1,6 +1,12 @@
 #ifndef COM_GITHUB_ADAMML_SWIMWEBSITE_EPABEACHINFORMATION
 #define COM_GITHUB_ADAMML_SWIMWEBSITE_EPABEACHINFORMATION
 
+/**
+===================================
+<swimwebsite/EPABeachInformation.h>
+===================================
+*/
+
 #include <swimwebsite/util.h>
 
 /**
@@ -20,7 +26,8 @@ beaches.ie API
   :param county: The name of the county in which the beach is located
   :type county: char[30]
   :param enum_county: Enumerated value for the county in which the beach is
-                      located. If the value of
+                      located. If the value of :param:`county` cannot be
+                      enumerated, the value defaults to GALWAY
   :type enum_county: County
   :param last_updated_date: The date on which the beaches.ie record was last
                             last updated
