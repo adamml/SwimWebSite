@@ -1,7 +1,13 @@
+from fileinput import filename
 import json
 import logging
 import urllib.error
 import urllib.request
+
+#
+# Set the default beach id to Salthill, Galway
+#
+__default = 'IEWEBWC170_0000_0200'
 
 #
 # set up the logger
@@ -43,14 +49,14 @@ def fetch_all_beaches_from_marine_institute_erddap():
 try:
     all_epa_beaches = fetch_all_beaches_from_epa_api()
 except urllib.error.HTTPError:
-    logging.error("Exception occurred: fetch_all_beaches_from_epa_api()",
-                  exc_info=True)
+    logging.error("Exception occurred: fetch_all_beaches_from_epa_api()" +
+                  " HTTPError")
 except urllib.error.URLError:
-    logging.error("Exception occurred: fetch_all_beaches_from_epa_api()",
-                  exc_info=True)
+    logging.error("Exception occurred: fetch_all_beaches_from_epa_api()" +
+                  "URLError")
 except TimeoutError:
-    logging.error("Exception occurred: fetch_all_beaches_from_epa_api()",
-                  exc_info=True)
+    logging.error("Exception occurred: fetch_all_beaches_from_epa_api()"+
+                  "TimeoutError")
 
 #
 # Get the list of beaches supported by predictions from the Marine Institute
@@ -59,34 +65,57 @@ try:
     all_marine_inst_beaches = fetch_all_beaches_from_marine_institute_erddap()
 except urllib.error.HTTPError:
     logging.error("Exception occurred: " +
-                  "fetch_all_beaches_from_marine_institute_erddap()",
-                  exc_info=True)
+                  "fetch_all_beaches_from_marine_institute_erddap()" +
+                  " HTTPError")
 except urllib.error.URLError:
     logging.error("Exception occurred: " +
-                  "fetch_all_beaches_from_marine_institute_erddap()",
-                  exc_info=True)
+                  "fetch_all_beaches_from_marine_institute_erddap()" +
+                  " URLError")
 except TimeoutError:
     logging.error("Exception occurred: " +
-                  "fetch_all_beaches_from_marine_institute_erddap()",
-                  exc_info=True)
+                  "fetch_all_beaches_from_marine_institute_erddap()" +
+                  " TimeoutError")
 
-all_marine_inst_beaches = [x[0].split('_MODELLED')[0]
-                           for x in all_marine_inst_beaches]
+marine_inst_beaches = [x[0].split('_MODELLED')[0]
+                       for x in all_marine_inst_beaches]
 
 #
 # Remove EPA beaches from the list if they aren't in the MI dataset
 #
 for beach in all_epa_beaches:
-    if beach['Code'] not in all_marine_inst_beaches:
+    if beach['Code'] not in marine_inst_beaches:
         all_epa_beaches.remove(beach)
 
 #
 # Produce the current table for a beach
 #
 for beach in all_epa_beaches:
+    file_name: str
+    if beach['Code'] == __default:
+        file_name = 'README'
+    else:
+        file_name = beach['Code']
+
+    latitude: float
+    longitide: float
+    if beach['EtrsX']:
+        longitide = beach['EtrsX']
+    if beach['EtrsY']:
+        latitude = beach['EtrsY']
     blue_flag = ""
     if beach['IsBlueFlag']:
         blue_flag = "🟦"
-    print("# {}, {} {}". format(beach['Name'],
-                                beach['CountyName'],
-                                blue_flag))
+
+    with open("./docs/{}.md".format(file_name), 'w', encoding='utf-8') as f:
+        f.write("""---
+title: Beach information for {}
+---
+# {}, {} {}
+
+<div align="center"><i>latitude: {} longitude: {}</i></div>""".
+                format("{}, {}".format(beach['Name'], beach['CountyName']),
+                       beach['Name'],
+                       beach['CountyName'],
+                       blue_flag,
+                       latitude,
+                       longitide))
