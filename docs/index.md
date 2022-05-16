@@ -1,7 +1,7 @@
 ---
-title: Beach information for Trá na mBan, An Spidéal, Galway
+title: Beach information for Salthill Beach, Galway
 ---
-# Trá na mBan, An Spidéal, Galway 
+# Salthill Beach, Galway 🟦
 
  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
    integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=="
@@ -10,4 +10,4 @@ title: Beach information for Trá na mBan, An Spidéal, Galway
    integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=="
    crossorigin=""></script>
 
-<div align="center"><i>latitude: 53.24320488 longitude: -9.29642020</i></div>
+<div align="center"><i>latitude: 53.25450533 longitude: -9.09222184</i></div>
