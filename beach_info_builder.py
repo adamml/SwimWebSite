@@ -104,7 +104,7 @@ for beach in all_epa_beaches:
         latitude = beach['EtrsY']
     blue_flag = ""
     if beach['IsBlueFlag']:
-        blue_flag = "🟦"
+        blue_flag = "<span class=\"material-icons\" color=\"blue\">flag</span>"
 
     with open("./docs/{}.md".format(file_name), 'w', encoding='utf-8') as f:
         f.write("""---
