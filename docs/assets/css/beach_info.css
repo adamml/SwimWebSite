@@ -1,5 +1,5 @@
 .blue-flag{
-    color: darkblue;
+    color: blue;
 }
 
 .location-info{
@@ -8,6 +8,6 @@
     font-size: smaller;
 }
 
-h1 {
+.markdown-body h1 {
     border-bottom: none;
 }

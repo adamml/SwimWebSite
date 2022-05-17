@@ -38,7 +38,7 @@ def county_name_str_to_fips_code_str(county_name: str) -> str:
         return "EI03"
     elif county_name.lower() == "cork":
         return "EI04"
-    elif county_name.lower == "donegal":
+    elif county_name.lower() == "donegal":
         return "EI06"
     elif county_name.lower() == "dublin":
         return "EI07"
@@ -83,7 +83,7 @@ def county_name_str_to_fips_code_str(county_name: str) -> str:
     elif county_name.lower() == "wicklow":
         return "EI31"
     else:
-        raise ValueError("Unknown county")
+        raise ValueError("Unknown county - {}".format(county_name.lower()))
 
 
 def fetch_all_beaches_from_epa_api():
@@ -116,6 +116,11 @@ def fetch_all_beaches_from_marine_institute_erddap():
                                 'IMI-TidePrediction_epa.json?' +
                                 'stationID' +
                                 '&distinct()') as resp:
+        return json.loads(resp.read().decode('utf-8'))['table']['rows']
+
+
+def fetch_tide_predictions_from_marine_institute():
+    with urllib.request.urlopen() as resp:
         return json.loads(resp.read().decode('utf-8'))['table']['rows']
 
 
@@ -173,33 +178,47 @@ for beach in all_epa_beaches:
 # Produce the up to date report for a beach
 #
 for beach in all_epa_beaches:
-    file_name: str
-    if beach['Code'] == __default:
-        file_name = 'index'
-    else:
-        file_name = beach['Code']
+    try:
+        file_name: str
+        if beach['Code'] == __default:
+            file_name = 'index'
+        else:
+            file_name = beach['Code']
 
-    latitude: float
-    longitide: float
-    if beach['EtrsX']:
-        longitide = beach['EtrsX']
-    if beach['EtrsY']:
-        latitude = beach['EtrsY']
-    blue_flag = ""
-    if beach['IsBlueFlag']:
-        blue_flag = ("<span class=\"material-icons blue-flag\">flag</span>")
+        latitude: float
+        longitide: float
+        if beach['EtrsX']:
+            longitide = beach['EtrsX']
+        else:
+            logging.warning("No EtrsX specified for Code \"{}\": \"{}, {}\"...".
+                            format(beach['Code'], beach['Name'],
+                                   beach['CountyName']))
+        if beach['EtrsY']:
+            latitude = beach['EtrsY']
+        else:
+            logging.warning("No EtrsY specified for Code \"{}\": \"{}, {}\"...".
+                            format(beach['Code'], beach['Name'],
+                                   beach['CountyName']))
+        blue_flag = ""
+        if beach['IsBlueFlag']:
+            blue_flag = ("<span class=\"material-icons blue-flag\">flag</span>")
 
-    with open("./docs/{}.md".format(file_name), 'w', encoding='utf-8') as f:
-        f.write("""---
+        with open("./docs/{}.md".format(file_name), 'w', encoding='utf-8') as f:
+            f.write("""---
 title: Beach information for {}
 ---
 # {}, {} {}
 
 <div class="location-info">latitude: {} longitude: {}</div>
+<div id="met-eireann-warnings" onload="get_met_eireann_warnings({})"></div>
 <div></div>""".
-                format("{}, {}".format(beach['Name'], beach['CountyName']),
-                       beach['Name'],
-                       beach['CountyName'],
-                       blue_flag,
-                       latitude,
-                       longitide))
+                    format("{}, {}".format(beach['Name'], beach['CountyName']),
+                           beach['Name'],
+                           beach['CountyName'],
+                           blue_flag,
+                           latitude,
+                           longitide,
+                           county_name_str_to_fips_code_str(beach['CountyName'])))
+    except ValueError:
+        logging.error('Value Error on FIPS Code for {}, {}'
+                      .format(beach['Name'], beach['CountyName']))
