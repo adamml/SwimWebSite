@@ -195,7 +195,8 @@ title: Beach information for {}
 ---
 # {}, {} {}
 
-<div align="center"><i>latitude: {} longitude: {}</i></div>""".
+<div class="location-info">latitude: {} longitude: {}</div>
+<div></div>""".
                 format("{}, {}".format(beach['Name'], beach['CountyName']),
                        beach['Name'],
                        beach['CountyName'],
