@@ -8,6 +8,23 @@
     font-size: smaller;
 }
 
+.met-eireann-warnings{
+    text-align: center;
+    font-size: smaller;
+}
+
 .markdown-body h1 {
     border-bottom: none;
+}
+
+.yellow-warning{
+    color: rgba(255, 255, 0, 0.842);
+}
+
+.orange-warning{
+    color: orange;
+}
+
+.red-warning{
+    color: red;
 }
