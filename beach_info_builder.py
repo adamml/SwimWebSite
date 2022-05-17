@@ -259,9 +259,9 @@ for beach in all_epa_beaches:
         for w in warn:
             if county_name_str_to_fips_code_str(beach['CountyName']) in w['regions']:
                 if w['capId'].find('Weather') > 0:
-                    warning_str += '<span class=\"material-icons ' + \
-                                   '{}-warning\">warning</span>&nbsp;{} ' +\
-                                   'weather warning: {} {}&nbsp;'.format(
+                    warning_str += ('<span class=\"material-icons ' +
+                                   '{}-warning\">warning</span>&nbsp;{} ' +
+                                   'weather warning: {} {}&nbsp;').format(
                                                             w['level'].lower(),
                                                             w['level'],
                                                             w['headline'],
