@@ -1,3 +1,13 @@
 .blue-flag{
     color: darkblue;
 }
+
+.location-info{
+    text-align: center;
+    font-style: italic;
+    font-size: smaller;
+}
+
+h1 {
+    border-bottom: none;
+}
