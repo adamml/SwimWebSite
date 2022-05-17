@@ -210,15 +210,14 @@ title: Beach information for {}
 # {}, {} {}
 
 <div class="location-info">latitude: {} longitude: {}</div>
-<div id="met-eireann-warnings" onload="get_met_eireann_warnings({})"></div>
+<div id="met-eireann-warnings"></div>
 <div></div>""".
                     format("{}, {}".format(beach['Name'], beach['CountyName']),
                            beach['Name'],
                            beach['CountyName'],
                            blue_flag,
                            latitude,
-                           longitide,
-                           county_name_str_to_fips_code_str(beach['CountyName'])))
+                           longitide))
     except ValueError:
         logging.error('Value Error on FIPS Code for {}, {}'
                       .format(beach['Name'], beach['CountyName']))
