@@ -222,7 +222,7 @@ except json.JSONDecodeError:
 #
 # Fetch all the tide predictions from the Marine Institute
 #
-print(fetch_tide_predictions_from_marine_institute())
+all_tide_predictions = fetch_tide_predictions_from_marine_institute()
 
 #
 # Produce the up to date report for a beach
