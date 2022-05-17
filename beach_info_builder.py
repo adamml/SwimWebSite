@@ -1,3 +1,9 @@
+"""A static site generator for beach information around Ireland. Pages include
+data from the Marine Institute, Met Eireann and the Environmental R=Protection
+Agency
+
+:author: @adamml
+"""
 import json
 import logging
 import urllib.error
@@ -25,7 +31,7 @@ def county_name_str_to_fips_code_str(county_name: str) -> str:
         the FIPS code fior, e.g. "Cork" or "Galway"
     :type county_name: str
 
-    :returns: A four character string that is the FIPS code for county_name
+    :return: A four character string that is the FIPS code for county_name
     :rtype: str
 
     :raises: ValueError: If county_name is not recognised
@@ -90,7 +96,7 @@ def fetch_all_beaches_from_epa_api():
     """Gets the current data from Ireland's Environment Protection Agency's
     API for the beaches.ie system.
 
-    :returns: An object representing the content of the JSON collected from
+    :return: An object representing the content of the JSON collected from
         the API
     :rtype: object
 
@@ -107,7 +113,7 @@ def fetch_all_beaches_from_marine_institute_erddap():
     """Fetches a list of Eden codes from the Marine Institute's Erddap server
     using the EPA beach prediction dataset as a source.
 
-    :returns: An object representing the content of the JSON collected from
+    :return: An object representing the content of the JSON collected from
         the API
     :rtype: object
     """
@@ -118,6 +124,11 @@ def fetch_all_beaches_from_marine_institute_erddap():
                                 '&distinct()') as resp:
         return json.loads(resp.read().decode('utf-8'))['table']['rows']
 
+
+def fetch_all_met_eireann_weather_warnings():
+    with urllib.request.urlopen('https://www.met.ie/Open_Data/json/warning_' +
+                                'IRELAND.json') as resp:
+        return json.loads(resp.read().decode('utf-8'))
 
 def fetch_tide_predictions_from_marine_institute():
     with urllib.request.urlopen() as resp:
@@ -130,17 +141,21 @@ def fetch_tide_predictions_from_marine_institute():
 try:
     all_epa_beaches = fetch_all_beaches_from_epa_api()
 except urllib.error.HTTPError:
-    logging.error("Exception occurred: fetch_all_beaches_from_epa_api()" +
+    logging.error("Exception occurred: fetch_all_beaches_from_epa_api() " +
                   " HTTPError")
+    raise SystemExit(0)
 except urllib.error.URLError:
-    logging.error("Exception occurred: fetch_all_beaches_from_epa_api()" +
+    logging.error("Exception occurred: fetch_all_beaches_from_epa_api() " +
                   "URLError")
+    raise SystemExit(0)
 except TimeoutError:
-    logging.error("Exception occurred: fetch_all_beaches_from_epa_api()" +
+    logging.error("Exception occurred: fetch_all_beaches_from_epa_api() " +
                   "TimeoutError")
+    raise SystemExit(0)
 except json.JSONDecodeError:
-    logging.error("Exception occurred: fetch_all_beaches_from_epa_api()" +
+    logging.error("Exception occurred: fetch_all_beaches_from_epa_api() " +
                   "JSONDecodeError")
+    raise SystemExit(0)
 
 #
 # Get the list of beaches supported by predictions from the Marine Institute
@@ -149,20 +164,24 @@ try:
     all_marine_inst_beaches = fetch_all_beaches_from_marine_institute_erddap()
 except urllib.error.HTTPError:
     logging.error("Exception occurred: " +
-                  "fetch_all_beaches_from_marine_institute_erddap()" +
+                  "fetch_all_beaches_from_marine_institute_erddap() " +
                   " HTTPError")
+    raise SystemExit(0)
 except urllib.error.URLError:
     logging.error("Exception occurred: " +
-                  "fetch_all_beaches_from_marine_institute_erddap()" +
+                  "fetch_all_beaches_from_marine_institute_erddap() " +
                   " URLError")
+    raise SystemExit(0)
 except TimeoutError:
     logging.error("Exception occurred: " +
-                  "fetch_all_beaches_from_marine_institute_erddap()" +
+                  "fetch_all_beaches_from_marine_institute_erddap() " +
                   " TimeoutError")
+    raise SystemExit(0)
 except json.JSONDecodeError:
     logging.error("Exception occurred:" +
-                  "fetch_all_beaches_from_marine_institute_erddap()" +
+                  "fetch_all_beaches_from_marine_institute_erddap() " +
                   "JSONDecodeError")
+    raise SystemExit(0)
 
 marine_inst_beaches = [x[0].split('_MODELLED')[0]
                        for x in all_marine_inst_beaches]
@@ -173,6 +192,32 @@ marine_inst_beaches = [x[0].split('_MODELLED')[0]
 for beach in all_epa_beaches:
     if beach['Code'] not in marine_inst_beaches:
         all_epa_beaches.remove(beach)
+
+#
+# Get the cuurently active weather warnings for Ireland
+#
+try:
+    warn = fetch_all_met_eireann_weather_warnings()
+except urllib.error.HTTPError:
+    logging.error("Exception occurred: " +
+                  "fetch_all_met_eireann_weather_warnings() " +
+                  " HTTPError")
+    raise SystemExit(0)
+except urllib.error.URLError:
+    logging.error("Exception occurred: " +
+                  "fetch_all_met_eireann_weather_warnings() " +
+                  " URLError")
+    raise SystemExit(0)
+except TimeoutError:
+    logging.error("Exception occurred: " +
+                  "fetch_all_met_eireann_weather_warnings() " +
+                  " TimeoutError")
+    raise SystemExit(0)
+except json.JSONDecodeError:
+    logging.error("Exception occurred:" +
+                  "fetch_all_met_eireann_weather_warnings() " +
+                  "JSONDecodeError")
+    raise SystemExit(0)
 
 #
 # Produce the up to date report for a beach
@@ -199,9 +244,20 @@ for beach in all_epa_beaches:
             logging.warning("No EtrsY specified for Code \"{}\": \"{}, {}\"...".
                             format(beach['Code'], beach['Name'],
                                    beach['CountyName']))
+
         blue_flag = ""
         if beach['IsBlueFlag']:
             blue_flag = ("<span class=\"material-icons blue-flag\">flag</span>")
+
+        warning_str = ""
+        for w in warn:
+            if county_name_str_to_fips_code_str(beach['CountyName']) in w['regions']:
+                if w['capId'].find('Weather') > 0:
+                    warning_str += '<span class=\"material-icons {}-warning\">warning</span>&nbsp;{} weather warning: {} {}.&nbsp;'.format(
+                        w['level'].lower(),
+                         w['level'], 
+                         w['headline'], 
+                         w['description'])
 
         with open("./docs/{}.md".format(file_name), 'w', encoding='utf-8') as f:
             f.write("""---
@@ -210,14 +266,16 @@ title: Beach information for {}
 # {}, {} {}
 
 <div class="location-info">latitude: {} longitude: {}</div>
-<div id="met-eireann-warnings"></div>
+<div id="met-eireann-warnings">{}</div>
 <div></div>""".
-                    format("{}, {}".format(beach['Name'], beach['CountyName']),
+                    format("{}, {}".format(beach['Name'], 
+                           beach['CountyName']),
                            beach['Name'],
                            beach['CountyName'],
                            blue_flag,
                            latitude,
-                           longitide))
+                           longitide,
+                           warning_str))
     except ValueError:
         logging.error('Value Error on FIPS Code for {}, {}'
                       .format(beach['Name'], beach['CountyName']))
