@@ -131,7 +131,7 @@ def fetch_all_met_eireann_weather_warnings():
         return json.loads(resp.read().decode('utf-8'))
 
 def fetch_tide_predictions_from_marine_institute():
-    with urllib.request.urlopen() as resp:
+    with urllib.request.urlopen("https://erddap.marine.ie/erddap/tabledap/IMI-TidePrediction_epa.json?time%2Clongitude%2Clatitude%2CstationID%2Csea_surface_height&time%3E=2022-05-16T21%3A00%3A00Z&time%3C=2022-05-18T03%3A00%3A00Z") as resp:
         return json.loads(resp.read().decode('utf-8'))['table']['rows']
 
 
@@ -220,6 +220,11 @@ except json.JSONDecodeError:
     raise SystemExit(0)
 
 #
+# Fetch all the tide predictions from the Marine Institute
+#
+print(fetch_tide_predictions_from_marine_institute())
+
+#
 # Produce the up to date report for a beach
 #
 for beach in all_epa_beaches:
@@ -235,39 +240,50 @@ for beach in all_epa_beaches:
         if beach['EtrsX']:
             longitide = beach['EtrsX']
         else:
-            logging.warning("No EtrsX specified for Code \"{}\": \"{}, {}\"...".
+            logging.warning("No EtrsX specified for Code \"{}\": \"{}, {}\"".
                             format(beach['Code'], beach['Name'],
                                    beach['CountyName']))
         if beach['EtrsY']:
             latitude = beach['EtrsY']
         else:
-            logging.warning("No EtrsY specified for Code \"{}\": \"{}, {}\"...".
+            logging.warning("No EtrsY specified for Code \"{}\": \"{}, {}\"".
                             format(beach['Code'], beach['Name'],
                                    beach['CountyName']))
 
         blue_flag = ""
         if beach['IsBlueFlag']:
-            blue_flag = ("<span class=\"material-icons blue-flag\">flag</span>")
+            blue_flag = ("<span class=\"material-icons blue-flag\">" +
+                         "flag</span>")
 
         warning_str = ""
         for w in warn:
             if county_name_str_to_fips_code_str(beach['CountyName']) in w['regions']:
                 if w['capId'].find('Weather') > 0:
-                    warning_str += '<span class=\"material-icons {}-warning\">warning</span>&nbsp;{} weather warning: {} {}.&nbsp;'.format(
-                        w['level'].lower(),
-                         w['level'], 
-                         w['headline'], 
-                         w['description'])
+                    warning_str += '<span class=\"material-icons ' + \
+                                   '{}-warning\">warning</span>&nbsp;{} ' +\
+                                   'weather warning: {} {}&nbsp;'.format(
+                                                            w['level'].lower(),
+                                                            w['level'],
+                                                            w['headline'],
+                                                            w['description'])
 
-        with open("./docs/{}.md".format(file_name), 'w', encoding='utf-8') as f:
+        with open("./docs/{}.md".format(file_name), 'w', 
+                  encoding='utf-8') as f:
             f.write("""---
 title: Beach information for {}
 ---
 # {}, {} {}
 
 <div class="location-info">latitude: {} longitude: {}</div>
-<div id="met-eireann-warnings">{}</div>
-<div></div>""".
+<div class="met-eireann-warnings">{}</div>
+<div></div>
+
+## Disclaimer
+
+This page contains data from the Marine Institute, 
+Met Eireann and the Environment Protection Agency. The page is provided for
+information purposes only and is not to be used for navigation. No liability 
+is assumed if information provided leads to personal injury etc...""".
                     format("{}, {}".format(beach['Name'], 
                            beach['CountyName']),
                            beach['Name'],
