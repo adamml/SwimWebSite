@@ -4,8 +4,12 @@ Agency
 
 :author: @adamml
 """
+import astral
+import astral.sun
+import datetime
 import json
 import logging
+import time
 import urllib.error
 import urllib.request
 
@@ -130,8 +134,33 @@ def fetch_all_met_eireann_weather_warnings():
                                 'IRELAND.json') as resp:
         return json.loads(resp.read().decode('utf-8'))
 
-def fetch_tide_predictions_from_marine_institute():
-    with urllib.request.urlopen("https://erddap.marine.ie/erddap/tabledap/IMI-TidePrediction_epa.json?time%2Clongitude%2Clatitude%2CstationID%2Csea_surface_height&time%3E=2022-05-16T21%3A00%3A00Z&time%3C=2022-05-18T03%3A00%3A00Z") as resp:
+
+def fetch_tide_predictions_from_marine_institute(is_dst: bool = False):
+    start: str
+    end: str
+    if is_dst is True:
+        start = "{}T22%3A00%3A00Z".format((datetime.datetime.utcnow()
+                                           - datetime.timedelta(days=1))
+                                          .strftime("%Y-%m-%d"))
+        end = "{}T03%3A00%3A00Z".format((datetime.datetime.utcnow() +
+                                         datetime.timedelta(days=1))
+                                        .strftime("%Y-%m-%d"))
+    else:
+        start = "{}T21%3A00%3A00Z".format((datetime.datetime.utcnow()
+                                           - datetime.timedelta(days=1))
+                                          .strftime("%Y-%m-%d"))
+        end = "{}T21%3A00%3A00Z".format((datetime.datetime.utcnow() +
+                                         datetime.timedelta(days=1))
+                                        .strftime("%Y-%m-%d"))
+    with urllib.request.urlopen(("https://erddap.marine.ie/erddap/" +
+                                 "tabledap/IMI-TidePrediction_epa.json?" +
+                                 "time%2C" +
+                                 "longitude%2C" +
+                                 "latitude%2C" +
+                                 "stationID%2C" +
+                                 "sea_surface_height" +
+                                 "&time%3E={}" +
+                                 "&time%3C={}").format(start, end)) as resp:
         return json.loads(resp.read().decode('utf-8'))['table']['rows']
 
 
@@ -220,54 +249,179 @@ except json.JSONDecodeError:
     raise SystemExit(0)
 
 #
+# TODO: Make this server robust
+#
+is_dst: bool
+if time.localtime().tm_isdst > 0:
+    is_dst = True
+else:
+    is_dst = False
+
+#
 # Fetch all the tide predictions from the Marine Institute
 #
-all_tide_predictions = fetch_tide_predictions_from_marine_institute()
+try:
+    all_tide_predictions = fetch_tide_predictions_from_marine_institute(is_dst)
+except urllib.error.HTTPError:
+    logging.error("Exception occurred: " +
+                  "all_tide_predictions() " +
+                  " HTTPError")
+    raise SystemExit(0)
+except urllib.error.URLError:
+    logging.error("Exception occurred: " +
+                  "all_tide_predictions() " +
+                  " URLError")
+    raise SystemExit(0)
+except TimeoutError:
+    logging.error("Exception occurred: " +
+                  "all_tide_predictions() " +
+                  " TimeoutError")
+    raise SystemExit(0)
+except json.JSONDecodeError:
+    logging.error("Exception occurred:" +
+                  "all_tide_predictions() " +
+                  "JSONDecodeError")
+    raise SystemExit(0)
 
 #
 # Produce the up to date report for a beach
 #
 for beach in all_epa_beaches:
     try:
+        #
+        # Set the file name prefix to for the current beach. One beach needs to
+        # be the index for the site, and this is set by the the __default
+        # variable at the top of the script
+        #
         file_name: str
         if beach['Code'] == __default:
             file_name = 'index'
         else:
             file_name = beach['Code']
 
+        #
+        # Set the latitude and longitude for the beach. For most beaches the
+        # data are carried in the EPA's information, but not for all. In these
+        # cases all fall back on to the Marine Institute's forecasts is needed.
+        #
         latitude: float
-        longitide: float
+        longitude: float
         if beach['EtrsX']:
-            longitide = beach['EtrsX']
+            longitude = beach['EtrsX']
         else:
             logging.warning("No EtrsX specified for Code \"{}\": \"{}, {}\"".
                             format(beach['Code'], beach['Name'],
                                    beach['CountyName']))
+            for predn in all_tide_predictions:
+                if "{}_MODELLED".format(beach['Code']) == predn[3]:
+                    longitude = predn[1]
+                if longitude:
+                    break
         if beach['EtrsY']:
             latitude = beach['EtrsY']
         else:
             logging.warning("No EtrsY specified for Code \"{}\": \"{}, {}\"".
                             format(beach['Code'], beach['Name'],
                                    beach['CountyName']))
-
+            for predn in all_tide_predictions:
+                if "{}_MODELLED".format(beach['Code']) == predn[3]:
+                    latitude = predn[2]
+                if latitude:
+                    break
+        #
+        # Set the string for a Blue Flag beach, the information regarding this
+        # comes from the EPA's data
+        #
         blue_flag = ""
         if beach['IsBlueFlag']:
             blue_flag = ("<span class=\"material-icons blue-flag\">" +
                          "flag</span>")
 
+        #
+        # Set the string for the Met Eireann weather warnings for the beach.
+        # Met Eireann use a FIPS code for the counties affected by a given
+        # weather warning, which needs to be calculated from the county name
+        # in the EPA's beach information. This portion of the script looks
+        # for weather warnings only, and does not display, for example,
+        # the environmental warnings around blight.
+        #
         warning_str = ""
         for w in warn:
-            if county_name_str_to_fips_code_str(beach['CountyName']) in w['regions']:
+            if county_name_str_to_fips_code_str(
+                    beach['CountyName']) in w['regions']:
                 if w['capId'].find('Weather') > 0:
                     warning_str += ('<span class=\"material-icons ' +
-                                   '{}-warning\">warning</span>&nbsp;{} ' +
-                                   'weather warning: {} {}&nbsp;').format(
+                                    '{}-warning\">warning</span>&nbsp;{} ' +
+                                    'weather warning: {} {}&nbsp;').format(
                                                             w['level'].lower(),
                                                             w['level'],
                                                             w['headline'],
                                                             w['description'])
 
-        with open("./docs/{}.md".format(file_name), 'w', 
+        #
+        # Calculate the dawn, dusk, sunrise, sunset times for the beach
+        #
+        astral_loc = astral.LocationInfo('name', 'region', 'tz/name',
+                                         latitude, longitude)
+        dawn_info = astral.sun.sun(astral_loc.observer,
+                                   date=datetime.datetime.now())
+        tdelta: datetime.timedelta
+        if is_dst:
+            tdelta = datetime.timedelta(hours=1)
+        else:
+            tdelta = datetime.timedelta(hours=0)
+
+        #
+        # Get the sea level for this beach through the day
+        #
+        sea_level_summary = [None, None, None, None, None, None, None, None]
+        for predn in all_tide_predictions:
+            if "{}_MODELLED".format(beach['Code']) == predn[3]:
+                if datetime.datetime.strptime(predn[0],
+                                              "%Y-%m-%dT%H:%M:%SZ") == \
+                            datetime.datetime.strptime("{} 00:00:00".
+                                                       format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                    sea_level_summary[0] = predn[4]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 03:00:00".
+                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                    sea_level_summary[1] = predn[4]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 06:00:00".
+                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                    sea_level_summary[2] = predn[4]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 09:00:00".
+                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                    sea_level_summary[3] = predn[4]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 12:00:00".
+                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                    sea_level_summary[4] = predn[4]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 15:00:00".
+                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                    sea_level_summary[5] = predn[4]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 18:00:00".
+                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                    sea_level_summary[6] = predn[4]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 21:00:00".
+                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                    sea_level_summary[7] = predn[4]
+
+        #
+        # Write the data to file
+        #
+        with open("./docs/{}.md".format(file_name), 'w',
                   encoding='utf-8') as f:
             f.write("""---
 title: Beach information for {}
@@ -276,22 +430,55 @@ title: Beach information for {}
 
 <div class="location-info">latitude: {} longitude: {}</div>
 <div class="met-eireann-warnings">{}</div>
+_Last updated_: {}
+
+|   |   |   |   |   |
+|---|---|---|---|---|
+|   |   |   | Dawn  | {} |
+|   |   |   | Sunrise  | {} |
+|   |   |   | Sunset  | {} |
+|   |   |   | Dusk  | {} |
+
 <div></div>
+
+|   | Sea Level  |
+|---|---|
+| 00:00 | {} |
+| 03:00 | {} |
+| 06:00 | {} |
+| 09:00 | {} |
+| 12:00 | {} |
+| 15:00 | {} |
+| 18:00 | {} |
+| 21:00 | {} |
 
 ## Disclaimer
 
-This page contains data from the Marine Institute, 
+This page contains data from the Marine Institute,
 Met Eireann and the Environment Protection Agency. The page is provided for
-information purposes only and is not to be used for navigation. No liability 
+information purposes only and is not to be used for navigation. No liability
 is assumed if information provided leads to personal injury etc...""".
-                    format("{}, {}".format(beach['Name'], 
+                    format("{}, {}".format(beach['Name'],
                            beach['CountyName']),
                            beach['Name'],
                            beach['CountyName'],
                            blue_flag,
                            latitude,
-                           longitide,
-                           warning_str))
-    except ValueError:
-        logging.error('Value Error on FIPS Code for {}, {}'
-                      .format(beach['Name'], beach['CountyName']))
+                           longitude,
+                           warning_str,
+                           datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                           (dawn_info['dawn'] + tdelta).strftime("%H:%M"),
+                           (dawn_info['sunrise'] + tdelta).strftime("%H:%M"),
+                           (dawn_info['sunset'] + tdelta).strftime("%H:%M"),
+                           (dawn_info['dusk'] + tdelta).strftime("%H:%M"),
+                           sea_level_summary[0],
+                           sea_level_summary[1],
+                           sea_level_summary[2],
+                           sea_level_summary[3],
+                           sea_level_summary[4],
+                           sea_level_summary[5],
+                           sea_level_summary[6],
+                           sea_level_summary[7]))
+    except ValueError as e:
+        logging.error('Value Error on FIPS Code for {}, {}, {}'
+                      .format(beach['Name'], beach['CountyName'], str(e)))
