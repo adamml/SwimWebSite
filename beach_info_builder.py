@@ -13,6 +13,8 @@ import time
 import urllib.error
 import urllib.request
 
+from string import Template
+
 #
 # Set the default beach id to Salthill, Galway
 #
@@ -107,6 +109,7 @@ def fetch_all_beaches_from_epa_api():
     :raises: urllib.error.HTTPError:
     :raises: urllib.error.URLError:
     :raises: TimeoutError
+    :raises: json.JSONDecodeError
     """
     with urllib.request.urlopen('https://api.beaches.ie/odata/beaches?' +
                                 '$expand=Incidents') as resp:
@@ -120,6 +123,11 @@ def fetch_all_beaches_from_marine_institute_erddap():
     :return: An object representing the content of the JSON collected from
         the API
     :rtype: object
+
+    :raises: urllib.error.HTTPError:
+    :raises: urllib.error.URLError:
+    :raises: TimeoutError
+    :raises: json.JSONDecodeError
     """
     with urllib.request.urlopen('https://erddap.marine.ie/erddap/' +
                                 'tabledap/' +
@@ -130,6 +138,18 @@ def fetch_all_beaches_from_marine_institute_erddap():
 
 
 def fetch_all_met_eireann_weather_warnings():
+    """Fetches the currently active weather and environemntal warnings for
+    Ireland as published by Met Eireann.
+
+    :returns: An object containing a list of dictionaries parsed from the
+        Met Eireann weather warnings extracted from the API
+    :rtype: object
+
+    :raises: urllib.error.HTTPError:
+    :raises: urllib.error.URLError:
+    :raises: TimeoutError
+    :raises: json.JSONDecodeError
+    """
     with urllib.request.urlopen('https://www.met.ie/Open_Data/json/warning_' +
                                 'IRELAND.json') as resp:
         return json.loads(resp.read().decode('utf-8'))
@@ -334,7 +354,8 @@ for beach in all_epa_beaches:
         #
         blue_flag = ""
         if beach['IsBlueFlag']:
-            blue_flag = ("<span class=\"material-icons blue-flag\">" +
+            blue_flag = ("<span class=\"material-icons blue-flag\" " +
+                         "alt=\"This a Blue Flag beach\">" +
                          "flag</span>")
 
         #
@@ -380,105 +401,172 @@ for beach in all_epa_beaches:
                 if datetime.datetime.strptime(predn[0],
                                               "%Y-%m-%dT%H:%M:%SZ") == \
                             datetime.datetime.strptime("{} 00:00:00".
-                                                       format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                                                       format((datetime.
+                                                               datetime.
+                                                               utcnow() +
+                                                               tdelta).
+                                                              strftime("%Y-" +
+                                                                       "%m-" +
+                                                                       "%d")),
+                                                       "%Y-%m-%d %H:%M:%S"):
                     sea_level_summary[0] = predn[4]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 03:00:00".
-                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
                     sea_level_summary[1] = predn[4]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 06:00:00".
-                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
                     sea_level_summary[2] = predn[4]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 09:00:00".
-                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
                     sea_level_summary[3] = predn[4]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 12:00:00".
-                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
                     sea_level_summary[4] = predn[4]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 15:00:00".
-                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
                     sea_level_summary[5] = predn[4]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 18:00:00".
-                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
                     sea_level_summary[6] = predn[4]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 21:00:00".
-                                                   format((datetime.datetime.utcnow() + tdelta).strftime("%Y-%m-%d")), "%Y-%m-%d %H:%M:%S"):
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
                     sea_level_summary[7] = predn[4]
+
+        #
+        # Handle next monitoring date
+        #
+        next_mon_date: str
+        if beach['NextMonitoringDate']:
+            next_mon_date = datetime.datetime.strptime(
+                beach['NextMonitoringDate'], "%Y-%m-%dT%H:%M:%S").strftime(
+                            "%d %B %Y")
+        else:
+            next_mon_date = "Unknown"
 
         #
         # Write the data to file
         #
         with open("./docs/{}.md".format(file_name), 'w',
                   encoding='utf-8') as f:
-            f.write("""---
-title: Beach information for {}
+            f.write(Template("""---
+title: Beach information for $beach_name, $county_name
 ---
-# {}, {} {}
+## $beach_name, $county_name $blue_flag
 
-<div class="location-info">latitude: {} longitude: {}</div>
-<div class="met-eireann-warnings">{}</div>
-_Last updated_: {}
+latitude: $latitude, longitude: $longitude
+{: .location-info}
+
+$weather_warnings
+{: .met-eireann-warnings}
+
+___Last updated___: $now_strftime; ___Water Quality___: $water_quality;
+___Last sample on___: $last_sample; ___Next Monitoring Date___: $next_mon_date
+{: .last-updated-and-water-quality}
 
 |   |   |   |   |   |
 |---|---|---|---|---|
-|   |   |   | Dawn  | {} |
-|   |   |   | Sunrise  | {} |
-|   |   |   | Sunset  | {} |
-|   |   |   | Dusk  | {} |
+|   |   |   | Dawn  | $dawn_strftime |
+|   |   |   | Sunrise  | $sunrise_strftime |
+|   |   |   | Sunset  | $sunset_strftime |
+|   |   |   | Dusk  | $dusk_strftime |
+{: .tide-and-sun-table}
 
 <div></div>
 
-|   | Sea Level  |
-|---|---|
-| 00:00 | {} |
-| 03:00 | {} |
-| 06:00 | {} |
-| 09:00 | {} |
-| 12:00 | {} |
-| 15:00 | {} |
-| 18:00 | {} |
-| 21:00 | {} |
+| | 00:00 | 03:00 | 06:00 | 09:00 | 12:00 | 15:00 | 18:00 | 21:00 |
+|---|---|---|---|---|---|---|---|---|
+| Sea level | $sl00 | $sl03 | $sl06 | $sl09| $sl12 | $sl15 | $sl18 | $sl21 |
+{: .detail-table}
 
-## Disclaimer
-
-This page contains data from the Marine Institute,
+__Disclaimer__: This page contains data from the Marine Institute,
 Met Eireann and the Environment Protection Agency. The page is provided for
 information purposes only and is not to be used for navigation. No liability
-is assumed if information provided leads to personal injury etc...""".
-                    format("{}, {}".format(beach['Name'],
-                           beach['CountyName']),
-                           beach['Name'],
-                           beach['CountyName'],
-                           blue_flag,
-                           latitude,
-                           longitude,
-                           warning_str,
-                           datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-                           (dawn_info['dawn'] + tdelta).strftime("%H:%M"),
-                           (dawn_info['sunrise'] + tdelta).strftime("%H:%M"),
-                           (dawn_info['sunset'] + tdelta).strftime("%H:%M"),
-                           (dawn_info['dusk'] + tdelta).strftime("%H:%M"),
-                           sea_level_summary[0],
-                           sea_level_summary[1],
-                           sea_level_summary[2],
-                           sea_level_summary[3],
-                           sea_level_summary[4],
-                           sea_level_summary[5],
-                           sea_level_summary[6],
-                           sea_level_summary[7]))
+is assumed if information provided leads to personal injury etc...
+{: .disclaimer}""").
+                    safe_substitute(beach_name=beach['Name'],
+                                    county_name=beach['CountyName'],
+                                    blue_flag=blue_flag,
+                                    latitude=latitude,
+                                    longitude=longitude,
+                                    weather_warnings=warning_str,
+                                    now_strftime=datetime.datetime.now().
+                                    strftime("%d %B %Y %H:%M"),
+                                    dawn_strftime=(dawn_info['dawn'] + tdelta).
+                                    strftime("%H:%M"),
+                                    sunrise_strftime=(dawn_info['sunrise']
+                                                      + tdelta).strftime(
+                                                          "%H:%M"),
+                                    sunset_strftime=(dawn_info['sunset']
+                                                     + tdelta).strftime(
+                                                         "%H:%M"),
+                                    dusk_strftime=(dawn_info['dusk'] +
+                                                   tdelta).strftime("%H:%M"),
+                                    sl00=sea_level_summary[0],
+                                    sl03=sea_level_summary[1],
+                                    sl06=sea_level_summary[2],
+                                    sl09=sea_level_summary[3],
+                                    sl12=sea_level_summary[4],
+                                    sl15=sea_level_summary[5],
+                                    sl18=sea_level_summary[6],
+                                    sl21z=sea_level_summary[7],
+                                    water_quality=beach['WaterQualityName'],
+                                    last_sample=datetime.datetime.strptime(
+                                        beach['LastSampleOn'],
+                                        "%Y-%m-%dT%H:%M:%S").
+                                    strftime("%d %B %Y"),
+                                    next_mon_date=next_mon_date))
     except ValueError as e:
         logging.error('Value Error on FIPS Code for {}, {}, {}'
+                      .format(beach['Name'], beach['CountyName'], str(e)))
+    except TypeError as e:
+        logging.error('TypeError on NextMonitoringDate Code for {}, {}, {}'
                       .format(beach['Name'], beach['CountyName'], str(e)))

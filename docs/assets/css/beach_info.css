@@ -28,3 +28,11 @@
 .red-warning{
     color: red;
 }
+
+.tide-and-sun-table>th{
+    visibility: hidden;
+}
+
+h1{
+    visibility: hidden;
+}
