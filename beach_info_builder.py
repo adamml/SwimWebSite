@@ -9,6 +9,7 @@ import astral.sun
 import datetime
 import json
 import logging
+import math
 import time
 import urllib.error
 import urllib.request
@@ -156,6 +157,22 @@ def fetch_all_met_eireann_weather_warnings():
 
 
 def fetch_tide_predictions_from_marine_institute(is_dst: bool = False):
+    """Fetches the full set of tide predictions for a day from the Marine
+    Institute's Erddap server. The returned object contains time, longitude,
+    latitude, station id and predicted sea level in metres for each prediction
+
+    :param: is_dst: Should Daylight Saving Time be applied, True if yes
+    :type: is_dst: bool, defaults to False
+
+    :return: An object representing the content of the JSON collected from
+        the API
+    :rtype: object
+
+    :raises: urllib.error.HTTPError:
+    :raises: urllib.error.URLError:
+    :raises: TimeoutError
+    :raises: json.JSONDecodeError
+    """
     start: str
     end: str
     if is_dst is True:
@@ -181,6 +198,49 @@ def fetch_tide_predictions_from_marine_institute(is_dst: bool = False):
                                  "sea_surface_height" +
                                  "&time%3E={}" +
                                  "&time%3C={}").format(start, end)) as resp:
+        return json.loads(resp.read().decode('utf-8'))['table']['rows']
+
+
+def fetch_all_neatl_model_from_marine_institute(is_dst: bool = False,
+                                                min_lat: float = None,
+                                                min_lon: float = None,
+                                                max_lat: float = None,
+                                                max_lon: float = None):
+    start: str
+    end: str
+    if is_dst is True:
+        start = "{}T01%3A00%3A00Z".format(datetime.datetime.utcnow()
+                                          .strftime("%Y-%m-%d"))
+        end = "{}T01%3A00%3A00Z".format((datetime.datetime.utcnow() +
+                                         datetime.timedelta(days=1))
+                                        .strftime("%Y-%m-%d"))
+    else:
+        start = "{}T00%3A00%3A00Z".format(datetime.datetime.utcnow()
+                                          .strftime("%Y-%m-%d"))
+        end = "{}T00%3A00%3A00Z".format((datetime.datetime.utcnow() +
+                                         datetime.timedelta(days=1))
+                                        .strftime("%Y-%m-%d"))
+    with urllib.request.urlopen(("https://erddap.digitalocean.ie/erddap/" +
+                                 "griddap/" +
+                                 "IMI_NEATL.json?" +
+                                 "sea_surface_temperature%5B" +
+                                 "({start}):1:({end})%5D%5B" +
+                                 "({min_lat}):1:({max_lat})%5D%5B" +
+                                 "({min_lon}):1:({max_lon})%5D," +
+                                 "sea_surface_x_velocity%5B" +
+                                 "({start}):1:({end})%5D%5B" +
+                                 "({min_lat}):1:({max_lat})%5D%5B" +
+                                 "({min_lon}):1:({max_lon})%5D," +
+                                 "sea_surface_y_velocity%5B" +
+                                 "({start}):1:({end})%5D%5B" +
+                                 "({min_lat}):1:({max_lat})%5D%5B" +
+                                 "({min_lon}):1:({max_lon})%5D").format(
+                                    start=start,
+                                    end=end,
+                                    min_lon=min_lon,
+                                    min_lat=min_lat,
+                                    max_lon=max_lon,
+                                    max_lat=max_lat)) as resp:
         return json.loads(resp.read().decode('utf-8'))['table']['rows']
 
 
@@ -302,6 +362,22 @@ except json.JSONDecodeError:
                   "all_tide_predictions() " +
                   "JSONDecodeError")
     raise SystemExit(0)
+
+#
+# Get the NEATL predictions from the Marine Institute
+#
+neatl_forecast = \
+    fetch_all_neatl_model_from_marine_institute(
+        is_dst=is_dst,
+        min_lat=min([x[2] for x in all_tide_predictions]) - 0.0125,
+        max_lat=max([x[2] for x in all_tide_predictions]) + 0.0125,
+        min_lon=min([x[1] for x in all_tide_predictions]) - 0.0125,
+        max_lon=max([x[1] for x in all_tide_predictions]) + 0.0125)
+
+#
+# Identify none null grid positions from the NEATL forecast
+#
+neatl_valid_grid = [[x[1], x[2]] for x in neatl_forecast if x[3] is not None]
 
 #
 # Produce the up to date report for a beach
@@ -493,6 +569,110 @@ for beach in all_epa_beaches:
             next_mon_date = "Unknown"
 
         #
+        # Find the closest NEATL grid point
+        # TODO: Turn into list comprehension
+        neatl_distances = [math.pow(math.pow(float(latitude) - float(x[0]), 2)
+                           + math.pow(float(longitude) - float(x[1]), 2), 0.5)
+                           for x in neatl_valid_grid]
+        neatl_closest_idx = neatl_distances.index(min(neatl_distances))
+        neatl_lat = neatl_valid_grid[neatl_closest_idx][0]
+        neatl_lon = neatl_valid_grid[neatl_closest_idx][1]
+
+        #
+        # Extract data from the NEATL predictions
+        #
+        water_temp = [None, None, None, None, None, None, None, None]
+        water_velocity_x = [None, None, None, None, None, None, None, None]
+        water_velocity_y = [None, None, None, None, None, None, None, None]
+        current_speed = [None, None, None, None, None, None, None, None]
+        current_direction = [None, None, None, None, None, None, None, None]
+
+        for predn in neatl_forecast:
+            if predn[1] == neatl_lat and predn[2] == neatl_lon:
+                if datetime.datetime.strptime(predn[0],
+                                              "%Y-%m-%dT%H:%M:%SZ") == \
+                            datetime.datetime.strptime("{} 00:00:00".
+                                                       format((datetime.
+                                                               datetime.
+                                                               utcnow() +
+                                                               tdelta).
+                                                              strftime("%Y-" +
+                                                                       "%m-" +
+                                                                       "%d")),
+                                                       "%Y-%m-%d %H:%M:%S"):
+                    water_temp[0] = predn[3]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 03:00:00".
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
+                    water_temp[1] = predn[3]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 06:00:00".
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
+                    water_temp[2] = predn[3]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 09:00:00".
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
+                    water_temp[3] = predn[3]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 12:00:00".
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
+                    water_temp[4] = predn[3]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 15:00:00".
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
+                    water_temp[5] = predn[3]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 18:00:00".
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
+                    water_temp[6] = predn[3]
+                elif datetime.datetime.strptime(predn[0],
+                                                "%Y-%m-%dT%H:%M:%SZ") == \
+                        datetime.datetime.strptime("{} 21:00:00".
+                                                   format((datetime.
+                                                           datetime.utcnow() +
+                                                           tdelta).
+                                                          strftime("%Y-%m-%d")
+                                                          ),
+                                                   "%Y-%m-%d %H:%M:%S"):
+                    water_temp[7] = predn[3]
+
+        #
         # Write the data to file
         #
         with open("./docs/{}.md".format(file_name), 'w',
@@ -500,7 +680,8 @@ for beach in all_epa_beaches:
             f.write(Template("""---
 title: Beach information for $beach_name, $county_name
 ---
-## $beach_name, $county_name $blue_flag
+# $beach_name, $county_name $blue_flag
+{: .h1-display}
 
 latitude: $latitude, longitude: $longitude
 {: .location-info}
@@ -525,6 +706,7 @@ ___Last sample on___: $last_sample; ___Next Monitoring Date___: $next_mon_date
 | | 00:00 | 03:00 | 06:00 | 09:00 | 12:00 | 15:00 | 18:00 | 21:00 |
 |---|---|---|---|---|---|---|---|---|
 | Sea level | $sl00 | $sl03 | $sl06 | $sl09| $sl12 | $sl15 | $sl18 | $sl21 |
+| Water temperature | $wt00 | $wt03 | $wt06 | $wt09 | $wt12 | $wt15 | $wt18 | $wt21 |
 {: .detail-table}
 
 __Disclaimer__: This page contains data from the Marine Institute,
@@ -557,7 +739,15 @@ is assumed if information provided leads to personal injury etc...
                                     sl12=sea_level_summary[4],
                                     sl15=sea_level_summary[5],
                                     sl18=sea_level_summary[6],
-                                    sl21z=sea_level_summary[7],
+                                    sl21=sea_level_summary[7],
+                                    wt00=water_temp[0],
+                                    wt03=water_temp[1],
+                                    wt06=water_temp[2],
+                                    wt09=water_temp[3],
+                                    wt12=water_temp[4],
+                                    wt15=water_temp[5],
+                                    wt18=water_temp[6],
+                                    wt21=water_temp[7],
                                     water_quality=beach['WaterQualityName'],
                                     last_sample=datetime.datetime.strptime(
                                         beach['LastSampleOn'],
@@ -566,7 +756,4 @@ is assumed if information provided leads to personal injury etc...
                                     next_mon_date=next_mon_date))
     except ValueError as e:
         logging.error('Value Error on FIPS Code for {}, {}, {}'
-                      .format(beach['Name'], beach['CountyName'], str(e)))
-    except TypeError as e:
-        logging.error('TypeError on NextMonitoringDate Code for {}, {}, {}'
                       .format(beach['Name'], beach['CountyName'], str(e)))

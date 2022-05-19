@@ -29,10 +29,10 @@
     color: red;
 }
 
-.tide-and-sun-table>th{
-    visibility: hidden;
+.tide-and-sun-table>thead{
+    display: none;
 }
 
-h1{
-    visibility: hidden;
+h1:not(.h1-display){
+    display:none;
 }
