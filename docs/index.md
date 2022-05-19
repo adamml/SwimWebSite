@@ -10,7 +10,7 @@ latitude: 53.25450533, longitude: -9.09222184
 
 {: .met-eireann-warnings}
 
-___Last updated___: 19 May 2022 17:07; ___Water Quality___: Excellent Quality;
+___Last updated___: 19 May 2022 22:28; ___Water Quality___: Excellent Quality;
 ___Last sample on___: 06 September 2021; ___Next Monitoring Date___: 23 May 2022
 {: .last-updated-and-water-quality}
 
@@ -27,7 +27,8 @@ ___Last sample on___: 06 September 2021; ___Next Monitoring Date___: 23 May 2022
 | | 00:00 | 03:00 | 06:00 | 09:00 | 12:00 | 15:00 | 18:00 | 21:00 |
 |---|---|---|---|---|---|---|---|---|
 | Sea level | -2.07 | -1.08 | 1.65 | 1.05| -1.65 | -1.11 | 1.62 | 1.41 |
-| Water temperature | None | 12.864984121262518 | 11.962792441068302 | 11.924467335931602 | 12.776673081904232 | 12.897084022344151 | 12.975349575926566 | 12.798310518848865 |
+| Water temperature | 13.3 | 12.9 | 12.0 | 11.9 | 12.8 | 12.9 | 13.0 | 12.8 |
+| Current | 0.2 | 0.3 | 0.2 | 0.2 | 0.3| 0.4 | 0.3 | 0.2 |
 {: .detail-table}
 
 __Disclaimer__: This page contains data from the Marine Institute,

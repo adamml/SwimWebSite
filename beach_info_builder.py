@@ -26,7 +26,7 @@ __default = 'IEWEBWC170_0000_0200'
 #
 logger = logging.getLogger()
 handler = logging.FileHandler("error.log")
-handler.setFormatter(logging.Formatter('%(asctime)s [%(name)s]: %(message)s'))
+handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s]: %(message)s'))
 logger.addHandler(handler)
 
 
@@ -176,17 +176,17 @@ def fetch_tide_predictions_from_marine_institute(is_dst: bool = False):
     start: str
     end: str
     if is_dst is True:
-        start = "{}T22%3A00%3A00Z".format((datetime.datetime.utcnow()
+        start = "{}T20%3A00%3A00Z".format((datetime.datetime.utcnow()
                                            - datetime.timedelta(days=1))
                                           .strftime("%Y-%m-%d"))
-        end = "{}T03%3A00%3A00Z".format((datetime.datetime.utcnow() +
+        end = "{}T02%3A00%3A00Z".format((datetime.datetime.utcnow() +
                                          datetime.timedelta(days=1))
                                         .strftime("%Y-%m-%d"))
     else:
         start = "{}T21%3A00%3A00Z".format((datetime.datetime.utcnow()
                                            - datetime.timedelta(days=1))
                                           .strftime("%Y-%m-%d"))
-        end = "{}T21%3A00%3A00Z".format((datetime.datetime.utcnow() +
+        end = "{}T03%3A00%3A00Z".format((datetime.datetime.utcnow() +
                                          datetime.timedelta(days=1))
                                         .strftime("%Y-%m-%d"))
     with urllib.request.urlopen(("https://erddap.marine.ie/erddap/" +
@@ -209,10 +209,10 @@ def fetch_all_neatl_model_from_marine_institute(is_dst: bool = False,
     start: str
     end: str
     if is_dst is True:
-        start = "{}T01%3A00%3A00Z".format(datetime.datetime.utcnow()
-                                          .strftime("%Y-%m-%d"))
-        end = "{}T01%3A00%3A00Z".format((datetime.datetime.utcnow() +
+        start = "{}T23%3A00%3A00Z".format((datetime.datetime.utcnow() -
                                          datetime.timedelta(days=1))
+                                          .strftime("%Y-%m-%d"))
+        end = "{}T23%3A00%3A00Z".format(datetime.datetime.utcnow()
                                         .strftime("%Y-%m-%d"))
     else:
         start = "{}T00%3A00%3A00Z".format(datetime.datetime.utcnow()
@@ -389,6 +389,8 @@ for beach in all_epa_beaches:
         # be the index for the site, and this is set by the the __default
         # variable at the top of the script
         #
+        logging.info("Beginning processing {}, {}".format(beach["Name"],
+                                                          beach["CountyName"]))
         file_name: str
         if beach['Code'] == __default:
             file_name = 'index'
@@ -570,7 +572,7 @@ for beach in all_epa_beaches:
 
         #
         # Find the closest NEATL grid point
-        # TODO: Turn into list comprehension
+        #
         neatl_distances = [math.pow(math.pow(float(latitude) - float(x[0]), 2)
                            + math.pow(float(longitude) - float(x[1]), 2), 0.5)
                            for x in neatl_valid_grid]
@@ -601,6 +603,8 @@ for beach in all_epa_beaches:
                                                                        "%d")),
                                                        "%Y-%m-%d %H:%M:%S"):
                     water_temp[0] = predn[3]
+                    water_velocity_x[0] = predn[4]
+                    water_velocity_y[0] = predn[5]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 03:00:00".
@@ -611,6 +615,8 @@ for beach in all_epa_beaches:
                                                           ),
                                                    "%Y-%m-%d %H:%M:%S"):
                     water_temp[1] = predn[3]
+                    water_velocity_x[1] = predn[4]
+                    water_velocity_y[1] = predn[5]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 06:00:00".
@@ -621,6 +627,8 @@ for beach in all_epa_beaches:
                                                           ),
                                                    "%Y-%m-%d %H:%M:%S"):
                     water_temp[2] = predn[3]
+                    water_velocity_x[2] = predn[4]
+                    water_velocity_y[2] = predn[5]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 09:00:00".
@@ -631,6 +639,8 @@ for beach in all_epa_beaches:
                                                           ),
                                                    "%Y-%m-%d %H:%M:%S"):
                     water_temp[3] = predn[3]
+                    water_velocity_x[3] = predn[4]
+                    water_velocity_y[3] = predn[5]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 12:00:00".
@@ -641,6 +651,8 @@ for beach in all_epa_beaches:
                                                           ),
                                                    "%Y-%m-%d %H:%M:%S"):
                     water_temp[4] = predn[3]
+                    water_velocity_x[4] = predn[4]
+                    water_velocity_y[4] = predn[5]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 15:00:00".
@@ -651,6 +663,8 @@ for beach in all_epa_beaches:
                                                           ),
                                                    "%Y-%m-%d %H:%M:%S"):
                     water_temp[5] = predn[3]
+                    water_velocity_x[5] = predn[4]
+                    water_velocity_y[5] = predn[5]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 18:00:00".
@@ -661,6 +675,8 @@ for beach in all_epa_beaches:
                                                           ),
                                                    "%Y-%m-%d %H:%M:%S"):
                     water_temp[6] = predn[3]
+                    water_velocity_x[6] = predn[4]
+                    water_velocity_y[6] = predn[5]
                 elif datetime.datetime.strptime(predn[0],
                                                 "%Y-%m-%dT%H:%M:%SZ") == \
                         datetime.datetime.strptime("{} 21:00:00".
@@ -671,7 +687,15 @@ for beach in all_epa_beaches:
                                                           ),
                                                    "%Y-%m-%d %H:%M:%S"):
                     water_temp[7] = predn[3]
+                    water_velocity_x[7] = predn[4]
+                    water_velocity_y[7] = predn[5]
+        
+        current_speed = [math.pow((math.pow(x[0], 2) + math.pow(x[1], 2)), 0.5) for x in zip(water_velocity_x, water_velocity_y)]
 
+        for i, vec in enumerate(zip(water_velocity_x, water_velocity_y)):
+            if vec[0] > 0 and vec[1] > 0:
+                current_direction[i] = math.degrees(math.atan(vec[0]/vec[1]))
+        logging.info(current_direction)
         #
         # Write the data to file
         #
@@ -707,6 +731,7 @@ ___Last sample on___: $last_sample; ___Next Monitoring Date___: $next_mon_date
 |---|---|---|---|---|---|---|---|---|
 | Sea level | $sl00 | $sl03 | $sl06 | $sl09| $sl12 | $sl15 | $sl18 | $sl21 |
 | Water temperature | $wt00 | $wt03 | $wt06 | $wt09 | $wt12 | $wt15 | $wt18 | $wt21 |
+| Current | $cu00 | $cu03 | $cu06 | $cu09 | $cu12| $cu15 | $cu18 | $cu21 |
 {: .detail-table}
 
 __Disclaimer__: This page contains data from the Marine Institute,
@@ -740,20 +765,30 @@ is assumed if information provided leads to personal injury etc...
                                     sl15=sea_level_summary[5],
                                     sl18=sea_level_summary[6],
                                     sl21=sea_level_summary[7],
-                                    wt00=water_temp[0],
-                                    wt03=water_temp[1],
-                                    wt06=water_temp[2],
-                                    wt09=water_temp[3],
-                                    wt12=water_temp[4],
-                                    wt15=water_temp[5],
-                                    wt18=water_temp[6],
-                                    wt21=water_temp[7],
+                                    wt00="{:.1f}".format(water_temp[0]),
+                                    wt03="{:.1f}".format(water_temp[1]),
+                                    wt06="{:.1f}".format(water_temp[2]),
+                                    wt09="{:.1f}".format(water_temp[3]),
+                                    wt12="{:.1f}".format(water_temp[4]),
+                                    wt15="{:.1f}".format(water_temp[5]),
+                                    wt18="{:.1f}".format(water_temp[6]),
+                                    wt21="{:.1f}".format(water_temp[7]),
+                                    cu00="{:.1f}".format(current_speed[0]),
+                                    cu03="{:.1f}".format(current_speed[1]),
+                                    cu06="{:.1f}".format(current_speed[2]),
+                                    cu09="{:.1f}".format(current_speed[3]),
+                                    cu12="{:.1f}".format(current_speed[4]),
+                                    cu15="{:.1f}".format(current_speed[5]),
+                                    cu18="{:.1f}".format(current_speed[6]),
+                                    cu21="{:.1f}".format(current_speed[7]),
                                     water_quality=beach['WaterQualityName'],
                                     last_sample=datetime.datetime.strptime(
                                         beach['LastSampleOn'],
                                         "%Y-%m-%dT%H:%M:%S").
                                     strftime("%d %B %Y"),
                                     next_mon_date=next_mon_date))
+        logging.info("Finished processing {}, {}".format(beach["Name"],
+                                                         beach["CountyName"]))
     except ValueError as e:
         logging.error('Value Error on FIPS Code for {}, {}, {}'
                       .format(beach['Name'], beach['CountyName'], str(e)))
