@@ -7,28 +7,28 @@ title: Beach information for Salthill Beach, Galway
 latitude: 53.25450533, longitude: -9.09222184
 {: .location-info}
 
-
+<span class="material-icons yellow-warning">warning</span>&nbsp;Yellow weather warning: Ice warning for Ireland A sharp frost and icy stretches will set in on Friday night as temperatures dip to -4 degrees in places.&nbsp;<span class="material-icons yellow-warning">warning</span>&nbsp;Yellow weather warning: Freezing Fog warning for Ireland Patches of freezing fog are expected, causing potentially hazardous driving conditions.&nbsp;
 {: .met-eireann-warnings}
 
-___Last updated___: 19 May 2022 22:28; ___Water Quality___: Excellent Quality;
-___Last sample on___: 06 September 2021; ___Next Monitoring Date___: 23 May 2022
+___Last updated___: 09 December 2022 21:21; ___Water Quality___: Excellent;
+___Last sample on___: 12 September 2022; ___Next Monitoring Date___: Unknown
 {: .last-updated-and-water-quality}
 
 |   |   |   |   |   |
 |---|---|---|---|---|
-|   |   |   | Dawn  | 04:45 |
-|   |   |   | Sunrise  | 05:31 |
-|   |   |   | Sunset  | 21:35 |
-|   |   |   | Dusk  | 22:21 |
+|   |   |   | Dawn  | 07:56 |
+|   |   |   | Sunrise  | 08:39 |
+|   |   |   | Sunset  | 16:18 |
+|   |   |   | Dusk  | 17:01 |
 {: .tide-and-sun-table}
 
 <div></div>
 
 | | 00:00 | 03:00 | 06:00 | 09:00 | 12:00 | 15:00 | 18:00 | 21:00 |
 |---|---|---|---|---|---|---|---|---|
-| Sea level | -2.07 | -1.08 | 1.65 | 1.05| -1.65 | -1.11 | 1.62 | 1.41 |
-| Water temperature | 13.3 | 12.9 | 12.0 | 11.9 | 12.8 | 12.9 | 13.0 | 12.8 |
-| Current | 0.2 | 0.3 | 0.2 | 0.2 | 0.3| 0.4 | 0.3 | 0.2 |
+| Sea level | -1.6 | 0.66 | 1.89 | -0.16| -1.78 | 0.09 | 1.59 | 0.04 |
+| Water temperature | 5.0 | 4.1 | 4.1 | 3.2 | 4.6 | 2.8 | 4.6 | 7.0 |
+| Current | 0.1 | 0.3 | 0.1 | 0.5 | 0.1| 0.4 | 0.2 | 0.3 |
 {: .detail-table}
 
 __Disclaimer__: This page contains data from the Marine Institute,

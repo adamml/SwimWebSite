@@ -1,0 +1,27 @@
+.location-info{
+    text-align: center;
+    font-style: italic;
+    font-size: smaller;
+}
+
+.water-quality{
+    text-align: center;
+    margin-top: 10px;
+}
+
+h1{
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.emphasis{
+    font-weight: bold;
+    font-style: italic;
+}
+
+.disclaimer {
+    margin-top: 20px;
+    margin-left: 15%;
+    margin-right: 15%;
+    margin-bottom: 20px;
+}
